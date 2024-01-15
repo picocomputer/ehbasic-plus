@@ -512,7 +512,7 @@ TabLoop:
       STA   FAC1_o            ; clear FAC1 overflow byte
       STA   last_sh           ; clear descriptor stack top item pointer high byte
 
-      LDA   #$08              ; set default tab size
+      LDA   #$0E              ; set default tab size to 14
       STA   TabSiz            ; save it
 
       LDA   #$03              ; set garbage collect step size for descriptor stack
@@ -1035,7 +1035,9 @@ LAB_1359:
       BCC   LAB_1359          ; if < ignore character
 
 LAB_1374:
-      CMP   #$7F              ; compare with [BACKSPACE] (delete last character)
+      CMP   #$08              ; compare with $08 [BACKSPACE] (delete last character)
+      BEQ   LAB_134B          ; go delete last character
+      CMP   #$7F              ; compare with $7F [BACKSPACE] (delete last character)
       BEQ   LAB_134B          ; go delete last character
 
       CMP   #$20              ; compare with [SP]
@@ -7967,7 +7969,7 @@ StrTab:
       .word V_USR             ; initial user function vector ("Function call" error)
       .byte $00               ; default NULL count
       .byte $00               ; clear terminal position
-      .byte $00               ; default terminal width byte
+      .byte $50               ; default terminal width byte
       .byte $F2               ; default limit for TAB = 14
       .word Ram_base          ; start of user RAM
 EndTab:
