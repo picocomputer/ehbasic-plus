@@ -99,7 +99,11 @@ PLOT_COLOR:
         .byte   $0A         ; default to Green
 
 
-F_TEXT:
+F_TEXT:     ; TEXTMODE now has 1-parameter: console-column-width (40 or 80)
+      JSR   LAB_SCGB        ; scan for "," then get dimension byte in x-reg. 
+                            ; Else syntax-error, warm start.
+      txa                   ; Transfer x-reg to a-reg, our text-console-size-flag byte
+                            ; before doing our c-call to:
       jmp _init_console_text
       rts ; for safety
 

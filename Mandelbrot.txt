@@ -4,7 +4,7 @@
   3 LET      HGR = $E98B  : REM F_HGR->init_bitmap_graphics()
   4 LET    HPLOT = $E993  : REM F_HPLOT->draw_pixel()
   5 LET TEXTMODE = $E9CF  : REM F_TEXT->init_console_text()
-  6 LET     HOME = $E9D3  : REM F_CLS->cls()
+  6 LET     HOME = $E9D7  : REM F_CLS->cls()
 
   7 LET      CLS = HOME   : REM cls()
   8 LET    WHITE = 15     : REM white ON EHBASIC HPLOT. 
