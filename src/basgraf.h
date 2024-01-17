@@ -10,7 +10,7 @@
  *                                0xFF: 320 x 240  4-bit-per-pixel
  *         erase_canvas(void) - Clears the bitmapped display.
  *    draw_pixel(x, y, color) - Draws a pixel at position x,y of color
- *        init_console_text() - Setup display for console/text; clear it.
+ * init_console_text(columns) - Setup display for console/text; clear it.
  *                      cls() - Clears the console-text display.
  *  
  * 
@@ -28,6 +28,30 @@
 #include <stdint.h>
 
 //#define swap(a, b) { int16_t t = a; a = b; b = t; }
+
+
+// User-friendly #defines for the xreg_ macros:
+
+// For VGA-pico canvas graphics there are 3 planes:
+#define CVPLANE0 ( 0 )
+#define CVPLANE1 ( 1 )
+#define CVPLANE2 ( 2 )
+
+// For VGA-pico Key-Register #00: Canvas Dimensions:
+// Use with c-macro: xreg_vga_canvas( )
+#define CVDIM_H320_V240 ( 1 )  //320x240  (4:3)
+#define CVDIM_H320_V180 ( 2 )  //320x180 (16:9)
+#define CVDIM_H640_V480 ( 3 )  //640x480  (4:3)
+#define CVDIM_H640_V360 ( 4 )  //640x360 (16:9)
+#define CVDIM_CONSOLE80 ( 0 )  //80-column failsafe console
+
+// For VGA-pico Key-Register #01: Canvas Fill-mode Types:
+// Use with c-macro: xreg_vga_mode( )
+#define CVFILL_CONSOLE   ( 0 )  //Console may be 40- or 80-column on selected plane#
+#define CVFILL_COLORTEXT ( 1 )  //Color Text fills on selected plane#
+#define CVFILL_TILE      ( 2 )  //Tile fills on selected plane#
+#define CVFILL_BITMAP    ( 3 )  //Bitmapped fills on selected plane#
+#define CVFILL_SPRITE    ( 4 )  //Sprite fills on selected plane#
 
 
 //From RP6502-VGA docs: the following two macros are only needed for 16-bit color.
@@ -69,28 +93,19 @@ uint8_t dark_magenta = 0x05
 #endif /*notdef*/
 
 
-#if 0
-void init_bitmap_graphics(uint16_t canvas_struct_address,
-                          uint16_t canvas_data_address,
-                          uint8_t  canvas_plane,
-                          uint8_t  canvas_type,
-                          uint16_t canvas_width,
-                          uint16_t canvas_height,
-                          uint8_t  bits_per_pixel);
-#endif /*0*/
 
-/* #defines for desired screen dimension */
+/* #defines for desired screen dimension call from EhBASIC */
 #define V180_H320_8BPP 0x00
 #define V240_H320_4BPP 0xFF
 
 #define HSIZE 320 /* always 320 for our use-case */
 #define HMAX  ( HSIZE - 1 ) /* max x-pixel */
 
-void init_bitmap_graphics(uint8_t dimension);
+void init_bitmap_graphics(uint8_t dimension); //either V180_H320_8BPP or V240_H320_4BPP
 void erase_canvas(void);
 void draw_pixel(uint16_t x, uint16_t y, uint16_t color);
 
-void init_console_text(void); 
+void init_console_text(uint8_t columns); 
 void cls(void);
 
 //uint8_t  bits_per_pixel(void);

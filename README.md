@@ -24,6 +24,7 @@ CALL addresses supplied are from the mapfile.
 Plotting command is callable from EhBASIC.
 
 Two plotting screen dimensions are supported.
+Either 80- or 40-column EhBASIC console is available. 
 
 The commands are:
 
@@ -31,7 +32,8 @@ The commands are:
        * CALL HGR,0   - selects 320h x 180v x 8bpp mode (16:9 letterbox);
        * CALL HGR,$FF - selects 320h x 240v x 4bpp mode (4:3 fullscreen)
     * HPLOT,x,y,color - paint a pixel of 'color' at x,y on the screen.
-    * TEXTMODE - return VGA-screen back to console/text mode
+    * TEXTMODE, 40 | 80 - return VGA-screen back to console/text mode
+       * option of either 80- or 40-column EhBASIC console
     * CLS (or HOME) - clear the console/text screen.
 
 Assumptions / Limitations / Notes:

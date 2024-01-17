@@ -11,6 +11,8 @@
  *         erase_canvas(void) - Clears the bitmapped display.
  *    draw_pixel(x, y, color) - Draws a pixel at position x,y of color
  *        init_console_text() - Setup display for console/text; clear it.
+ *                                40: 40-columns
+ *                                80 (or any value but 40): 80-columns
  *                      cls() - Clears the console-text display.
  * 
  * Note: Based on studying the works of:
@@ -43,7 +45,7 @@
 /*static*/ uint16_t canvas_w = 320;     //we are either 320 x 180 or 320 x 240
 /*static*/ uint16_t canvas_h = 180;     //we are either 320 x 180 or 320 x 240
 /*static*/  uint8_t bpp_mode = 3;       //bits_per_pixel is 8
-/*static*/  uint8_t kr_canvas = 2;      //key-register canvas; either 2 or 1 
+/*static*/  uint8_t kr_canvas = CVDIM_H320_V180;      //key-register canvas; either 2 or 1 
                                     // use-2: 320x180 (16:9) our-original that worked
                                     // use-1: 320x240 (4:3)
                                     //other options (don't use for our EhBASIC)
@@ -62,20 +64,48 @@
 // Switch into selected bitmap-graphics mode, then clear the screen.
 // Can hook this as a 'HGR' command in EhBASIC (reference Applsoft Basic)
 // ---------------------------------------------------------------------------
-void init_bitmap_graphics( uint8_t dimension /*uint16_t canvas_struct_address,
-                          uint16_t canvas_data_address,
-                          uint8_t  canvas_plane,
-                          uint8_t  canvas_type,
-                          uint16_t canvas_width,
-                          uint16_t canvas_height,
-                          uint8_t  bits_per_pixel */ )
+void init_bitmap_graphics( uint8_t dimension )
 {
+
+
+/*****************************
+ * Graphic HW Initialization:
+ * The 3-step pattern to follow to initialize graphics canvases is as follows:
+ *****************************
+
+    Step-1: Select the Canvas Dimension Size (Key-reg-00)
+            For Step-1, use the c-macro: xreg_vga_canvas( );
+            #defines are defined with friendly-names for the available Canvas Dimesion Sizes
+
+    For Console-mode, skip Step-2; otherwise for Bitmap Graphics Mode Programming:	
+    Step-2: Set-up a Configuration-Structure for the fill-mode you WILL be using in step-3
+	 (for bitmap mode, you have 8 values to set-up a-priori in the ***Bitmap***-Config-Structure)
+	  1: (bool) x_wrap
+	  2: (bool) y_wrap
+	  3: (int_16t) x_px
+	  3: (int_16t) y_px
+	  4: (int_16t) width_px
+	  5: (int_16t) height_px
+	  6: (uint_16t) xram_data_ptr_px
+	  7: (uint_16t) xram_palette_ptr_px
+
+      For Step-2 use the c-macro: xram0_struct_set(config_struct, vga_mode3_config_t, ...)
+       ... allocating a 'config_struct' variable, and using the appropriate 'vga_modeX_config_t' type 
+       ... in the macro. There are unique _config_t type definitions depending on the vga mode selected.
+	
+    Step-3: Select the Canvas Fill-mode type (and plane# if nonzero) (Key-reg-01 plus the vargs) 
+            Also referencing the Config-Structure set-up in step-2 
+            For Step-3, use the c-macro: xreg_vga_mode(..., plane#)
+            #defines are defined with friendly-names for the available Canvas Fill-mode types.
+            
+********************************/
+
 
     // initializers for the pico-VGA-HW
 
     uint16_t canvas_struct = 0xFF00;
     uint16_t canvas_data   = 0x0000;
-    uint8_t  plane = 0;             //from RP6502-VGA docs: we have 3-planes; plane may be: 0, 1 or 2
+ // uint8_t  plane = CVPLANE0             //from RP6502-VGA docs: we have 3-planes; plane may be: 0, 1 or 2
 
  // uint8_t  canvas_mode = 2;       
                                     /* 
@@ -108,18 +138,18 @@ void init_bitmap_graphics( uint8_t dimension /*uint16_t canvas_struct_address,
 
     canvas_h  = 180;  //default canvas to 180 vertical high
     bpp_mode  = 3;    //bits_per_pixel is 8; to ensure canvas memory < 64k-bytes
-    kr_canvas = 2;    //use-1: 320x180 (16:9)   
+    kr_canvas = CVDIM_H320_V180;    //use-2: 320x180 (16:9)   
 
     /* switch screen to 320h x 240v x 4bpp */
     if (dimension == V240_H320_4BPP ) 
     {
          canvas_h  = 240;  //switch canvas to 240 vertical high
          bpp_mode  = 2;    //bits_per_pixel is 4; to ensure canvas memory < 64k-bytes
-         kr_canvas = 1;    //use-1: 320x240 (4:3)
+         kr_canvas = CVDIM_H320_V240;    //use-1: 320x240 (4:3)
 //    } else {
 //       canvas_h  = 180;  //switch canvas to 180 vertical high
 //       bpp_mode  = 3;    //bits_per_pixel is 8; to ensure canvas memory < 64k-bytes
-//       kr_canvas = 2;    //use-1: 320x180 (16:9)       
+//       kr_canvas = CVDIM_H320_V180;    //use-1: 320x180 (16:9)       
     } // end if(dimension)
 
 
@@ -129,28 +159,6 @@ void init_bitmap_graphics( uint8_t dimension /*uint16_t canvas_struct_address,
 //  when bpp_mode==4 set x_offset = 30; /* (360 - 240)/4 */
 //  when bpp_mode==4 set y_offset = 29; /* (240 - 124)/4 */
 
-
-#if 0    
-    // valid range check - of inputs to init_bitmap_graphics()
-    if (canvas_struct_address != 0) {
-        canvas_struct = canvas_struct_address;
-    }
-    if (canvas_data_address != 0) {
-        canvas_data = canvas_data_address;
-    }
-    if (/*canvas_plane >= 0 &&*/ canvas_plane <= 2) {
-        plane = canvas_plane;
-    }
-    if (canvas_type > 0 && canvas_type <= 4) {
-        canvas_mode = canvas_type;
-    }
-    if (canvas_width > 0 && canvas_width <= 640) {
-        canvas_w = canvas_width;
-    }
-    if (canvas_height > 0 && canvas_height <= 480) {
-        canvas_h = canvas_height;
-    }
-#endif /*0*/
 
 #if 0
     printf("dimension = %x\n", dimension);
@@ -177,18 +185,20 @@ void init_bitmap_graphics( uint8_t dimension /*uint16_t canvas_struct_address,
                       // use-3 - 640x480 (4:3)
                       // use-4 - 640x360 (16:9)
 
-    xreg(1, 0, 0, kr_canvas);
+    xreg_vga_canvas( kr_canvas ); //Step-1
+//or:  xreg(1, 0, 0, kr_canvas);
 
-
+    //Step-2:
     xram0_struct_set(canvas_struct, vga_mode3_config_t, x_wrap, false);
     xram0_struct_set(canvas_struct, vga_mode3_config_t, y_wrap, false);
     xram0_struct_set(canvas_struct, vga_mode3_config_t, x_pos_px,    0 /*x_offset*/);
     xram0_struct_set(canvas_struct, vga_mode3_config_t, y_pos_px,    0 /*y_offset*/);
-    xram0_struct_set(canvas_struct, vga_mode3_config_t,  width_px, HSIZE /*canvas_w*/);
+    xram0_struct_set(canvas_struct, vga_mode3_config_t, width_px, HSIZE /*canvas_w*/);
     xram0_struct_set(canvas_struct, vga_mode3_config_t, height_px, canvas_h); 
     xram0_struct_set(canvas_struct, vga_mode3_config_t, xram_data_ptr,    canvas_data);
     xram0_struct_set(canvas_struct, vga_mode3_config_t, xram_palette_ptr, 0xFFFF);
 
+    // Step-3:
     // initialize the bitmap video modes
     //nzh: bpp_mode==3 for 8-bit-color 
     //
@@ -200,7 +210,8 @@ void init_bitmap_graphics( uint8_t dimension /*uint16_t canvas_struct_address,
 //  xreg_vga_mode(3, /*bpp_mode=*/ 3, canvas_struct, plane); // bitmap mode
     /*ntz - note the two '3's here; the 1st 3 was hard-coded in vruumllc's code */
 //  xreg(1, 0, 1, 3, 3,        canvas_struct, plane);
-    xreg(1, 0, 1, 3, bpp_mode, canvas_struct, plane);
+//  xreg(1, 0, 1, 3, bpp_mode, canvas_struct, plane);
+    xreg_vga_mode(CVFILL_BITMAP, bpp_mode, canvas_struct, CVPLANE0); // bitmap mode  
 
 
     erase_canvas(); 
@@ -315,19 +326,30 @@ void draw_pixel(uint16_t x, uint16_t y, uint16_t color)
 // Switch into console/text mode, clear the console.
 // Can hook this as a 'TEXT' or 'TEXTMODE' command in EhBASIC
 // ---------------------------------------------------------------------------
-void init_console_text(void)
+void init_console_text(uint8_t columns)
 {
 
- // xreg_vga_canvas(0); // or
-    xreg(1, 0, 0, 0);   //kr_canvas = 0 means 80-column console
+//  uint8_t  plane = CVPLANE0;  //from RP6502-VGA docs: we have 3-planes; plane may be: 0, 1 or 2
 
- // xreg_vga_mode(0); // console mode.  Macro expands to: xreg(1, 0, 1, 0);
-    xreg(1, 0, 1, 0); // kr_mode = 0 means console
 
-    // Erase console
+    if (columns != 40) { /* switch to a full-screen (4:3) 80-column console */
+
+        xreg_vga_canvas(CVDIM_CONSOLE80); //select 80-column console == 0 (failsafe) 
+
+    } else if (columns == 40) { /* switch to a vintage (4:3) 40-column console */
+
+        /*Selecting a 320x240 fill-mode will mean we'll have a 40-column console*/
+        xreg_vga_canvas(CVDIM_H320_V240); //select 320x240 canvas == 1(4:3 full-screen) 
+
+    } // and if(columns)
+
+    /*Now switch back to a console*/
+    xreg_vga_mode(CVFILL_CONSOLE, CVPLANE0); // console-mode==0 on plane#
+
+
+    /*** Erase console ***/
 //  printf("\f");
     putc(0x0C, stdout);  //send a form-feed (0x0C) to the ansi-compatible VGA console; clears screen.
-
 
 } //end init_console_text() 
 
@@ -337,7 +359,7 @@ void init_console_text(void)
 // ---------------------------------------------------------------------------
 void cls(void)
 {
-    // Erase console
+    /*** Erase console ***/
 //  printf("\f");
     putc(0x0C, stdout);  //send a form-feed (0x0C) to the ansi-compatible VGA console; clears screen.
 
