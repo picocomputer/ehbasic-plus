@@ -5,6 +5,7 @@
 .export V_USR
 .import LAB_FCER
 .import F_HGR, F_HPLOT, F_TEXT, F_CLS 
+.import F_GETCLK, CLK_VAL32
 
 V_USR:
       JMP LAB_FCER            ; Replace me with your code ("Function call" error)
@@ -14,4 +15,6 @@ NewFunc_Tab:
       .word F_TEXT            ; new TEXTMODE -> _init_console_text() command
       .word F_HGR             ; new HGR -> _init_bitmap_graphics() command
       .word F_HPLOT           ; new HPLOT,x,y,color command
+      .word F_GETCLK          ; new GETCLK command
+      .word CLK_VAL32         ; REMOVE ME - temporary
 EndNfTab:

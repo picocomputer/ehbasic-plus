@@ -4,12 +4,17 @@
 ;
 ; Date: 24-Dec-2023
 ;
+; Revisions: 
+;       27-Feb-2024 - Add reading RIA's 100-hz clock().  -ntz
+;
 
 .include "rp6502.inc"
 
 .export F_HGR, F_HPLOT, F_TEXT, F_CLS 
-.export PLOT_XBYT, PLOT_YBYT, PLOT_COLOR
-.import LAB_FCER, LAB_SCGB
+;.export PLOT_XBYT, PLOT_YBYT, PLOT_COLOR
+.export F_GETCLK
+.export CLK_VAL32
+.import LAB_FCER, LAB_SCGB, LAB_295E, LAB_18E0
 .import _init_bitmap_graphics, _draw_pixel, _init_console_text, _cls
 
 ;
@@ -110,6 +115,41 @@ F_TEXT:     ; TEXTMODE now has 1-parameter: console-column-width (40 or 80)
 F_CLS:
       jmp _cls
       rts ; for safety
+
+F_GETCLK:
+      lda #RIA_OP_CLOCK
+      sta RIA_OP             ; Ask RIA to provide its 32-bits of timer clock
+                             ; Results will be in: $FFF9(hi), $FFF8, $FFF6, $FFF4(lo)
+                             ;                   RIA_SREG+1 RIA_SREG  RIA_X  RIA_A
+      jsr RIA_SPIN           ; Pend until RIA_OP is done.
+      
+ ; Note: XA swapped in LAB_295E print routine, so items swapped in following
+      ldx RIA_SREG           ; get upper 16-bits of clock result (lo)
+      lda RIA_SREG+1         ; (hi)
+ ;    lda #$0A               ; test code - gets stored in CLK_VAL32.01
+ ;    ldx #$0B               ; test code - gets stored in CLK_VAL32.02
+      sta CLK_VAL32
+      stx CLK_VAL32+1
+      jsr LAB_295E           ; print XA as unsigned integer and return here
+ 
+      jsr LAB_18E0           ; print a " " space
+
+ ; Note: XA swapped in LAB_295E print routine, so items swapped in following
+      ldx RIA_A              ; get lower 16-bits of clock result (lo)
+      lda RIA_X              ; (hi)
+;     lda #$0C               ; test code - gets stored in CLK_VAL32.03
+;     ldx #$0D               ; test code - gets stored in CLK_VAL32.04
+      sta CLK_VAL32+2
+      stx CLK_VAL32+3
+      jmp LAB_295E           ; print XA as unsigned integer testcode:0x0C.0D = 3085-decimal
+                             ; Note: XA swapped in print routine    reg-A.reg-X
+      rts ; not-reached;safety
+
+CLK_VAL32:
+      .byte $01
+      .byte $02
+      .byte $03
+      .byte $04
 
 ; Let's show this label in the listing file / mapfile.
 AA_end_enhancements:

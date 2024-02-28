@@ -49,7 +49,7 @@
 
 .exportzp LAB_WARM, IrqBase, NmiBase, Dtypef
 .export LAB_COLD, LAB_FCER, LAB_14BD, LAB_EVEX, LAB_SNER, LAB_22B6, LAB_1463, LAB_RMSG
-.export LAB_SCGB
+.export LAB_SCGB, LAB_295E, LAB_18E0
 
 .import V_INPT, V_OUTP, V_LOAD, V_SAVE, V_USR
 .import __HEADER_START__, __RAM_START__, __RAM_SIZE__, __STACKSIZE__, __IBUFFSIZE__
@@ -7979,7 +7979,7 @@ LAB_MSZM:
 
 LAB_SMSG:
       .byte " Bytes free",$0D,$0A,$0A
-      .byte "Enhanced BASIC 2.22p5",$0A,$00
+      .byte "Enhanced BASIC+ 2.22p5 20240227",$0A,$00
 
 ; numeric constants and series
 
